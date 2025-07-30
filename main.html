@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Cladogram</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            *{
+                margin:0;
+            }
+            html,body{
+                height:100%;
+            }
+            .header{
+                height:10%;
+                background-color:#333333;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                -webkit-touch-callout:none; 
+                -webkit-user-select:none;
+                -khtml-user-select:none;
+                -moz-user-select:none;
+                -ms-user-select:none;
+                user-select:none;
+                font-family:courier new;
+                font-size:3vh;
+                color:#FFFFFF;
+            }
+            .assembler{
+                position:absolute;
+                bottom:0;
+                left:0;
+                width:80%;
+                height:30%;
+                background-color:#333333;
+            }
+            .shiftstyle{
+                position:absolute;
+                left:50%;
+                top:50%;
+                transform:translate(-50%,-200%);
+                font-family:courier new;
+                font-size:3vh;
+                color:#FFFFFF;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            .displayArrow{
+                position:absolute;
+                left:50%;
+                top:50%;
+                transform:translate(-50%,-50%);
+                font-family:courier new;
+                font-size:10vh;
+                color:#FFFFFF;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            .roots{
+                width:28vw;
+                height:30vh;
+                overflow-y:scroll;
+                position:absolute;
+                border-right:0px;
+            }
+            .branch{
+                position:absolute;
+                left:50%;
+                top:50%;
+                width:6vw;
+                height:7vh;
+                background-color:#444444;
+                transform:translate(200%,-50%);
+                visibility:hidden;
+                font-family:courier new;
+                font-size:4vh;
+                color:#FFFFFF;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            .shiftstick{
+                position:absolute;
+                width:20%;
+                height:90%;
+                bottom:0%;
+                right:0%;
+                background-color:#444444;
+                overflow-y:scroll;
+            }
+            .button{
+                margin-top:5%;
+                margin-left:5%;
+                width:90%;
+                height:10%;
+                background-color:#555555;
+                font-family:"courier new";
+                font-size:5vh;
+                color:#FFFFFF;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            .cladogram{
+                position:relative;
+                width:80%;
+                height:60%;
+                background-color:#555555;
+            }
+            .form{
+                position:absolute;
+                background-color:#666666;
+                font-family:"courier new";
+                font-size:2vh;
+                color:#FFFFFF;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+            .arrow{
+                font-family:courier new;
+                font-size:2vh;
+                color:#FFFFFF;
+                display:flex;
+                justify-content:center;
+                align-items:center;
+                -webkit-touch-callout:none; 
+                -webkit-user-select:none;
+                -khtml-user-select:none;
+                -moz-user-select:none;
+                -ms-user-select:none;
+                user-select:none;
+                position:absolute;
+                overflow:visible;
+            }
+        </style>
+    </head>
+
+    <body>
+        <canvas id="canvas" style="display:block;height:0;"></canvas>
+        <div class="header" id="header">
+            <img src="cobweb.png" style="   position:absolute;
+                                            height:8vh;
+                                            width:8vh;
+                                            top:1vh;
+                                            right:1vh;"
+                onclick="onWebClick()"></div>
+        <div class="assembler" id="assembler">
+            <div class="shiftstyle" id="shiftstyle"></div>
+            <div class="displayArrow" id="arrow"></div>
+            <div class="roots" id="roots"></div>
+            <div class="branch" id="branch" onclick="onBranchClick(this)"></div></div>
+        <div class="shiftstick" id="shiftstick"></div>
+        <div class="cladogram" id="cladogram"></div>
+    </body>
+
+    <script>
+        // web mats
+        var inWebMode=false;
+        var isRootForm=true;
+        var rootID,branchID;
+        function onWebClick(){inWebMode=!inWebMode;}
+        function diagonal(angleIn,width,height){
+            var limit=Math.atan(height/width);
+            function reduceAngle(angle){
+                if(angle>2*Math.PI){angle-=2*Math.PI;return reduceAngle(angle);
+                }else if(angle<0){angle+=2*Math.PI;return reduceAngle(angle);
+                }else if(angle>Math.PI/2){
+                    if(angle<Math.PI){
+                        angle=Math.PI-angle;
+                    }else if(angle<3*Math.PI/2){
+                        angle-=Math.PI;
+                    }else{
+                        angle=2*Math.PI-angle;
+                    }
+                }return angle;
+            }
+            var angle=reduceAngle(angleIn);
+            if(angle<limit){
+                return Math.abs(width/Math.cos(angle));
+            }else{
+                return Math.abs(height/Math.sin(angle));
+            }
+        }
+        function getWebDims(x1,y1,x2,y2,xPx,yPx){
+            var dx=xPx*(x2-x1);
+            var dy=yPx*(y2-y1);
+            var angle=Math.atan(dy/dx);if(dx<0){angle+=Math.PI;}
+            var width=Math.sqrt(dx**2+dy**2)-100*diagonal(angle,.04*xPx,.06*yPx);
+            var height=6*yPx;
+            var left=.5*((x1+x2)*xPx-width);
+            var top=.5*((y1+y2)*yPx-height);
+            return [width/xPx,height/yPx,left/xPx,top/yPx,angle];
+        }
+        function createArrow(id){
+            var arrow=document.createElement("div");
+            arrow.setAttribute("id",id);
+            arrow.setAttribute("class","arrow");
+            document.getElementById("cladogram").prepend(arrow);
+            updateArrow(id);
+            nArrows++;
+        }
+        function getIDs(id){
+            if(id.slice(0,5)=="arrow"){
+                var temp=id.slice(id.indexOf('-')+1);
+                var rootID=temp.slice(0,temp.indexOf('-'));
+                var branchID=temp.slice(temp.indexOf('-')+1);
+                return [rootID,branchID];
+            }
+            return [false,false];
+        }
+        function updateArrow(id){
+            var arrow=document.getElementById(id);
+            var temp=getIDs(id);
+            var rootID=temp[0];
+            var branchID=temp[1];
+            var x1=parseInt(document.getElementById(rootID).style.left)+.5*parseInt(document.getElementById(rootID).style.width);
+            var y1=parseInt(document.getElementById(rootID).style.top)+.5*parseInt(document.getElementById(rootID).style.height);
+            var x2=parseInt(document.getElementById(branchID).style.left)+.5*parseInt(document.getElementById(branchID).style.width);
+            var y2=parseInt(document.getElementById(branchID).style.top)+.5*parseInt(document.getElementById(branchID).style.height);
+            var width=document.getElementById("cladogram").offsetWidth;
+            var height=document.getElementById("cladogram").offsetHeight;
+            var dims=getWebDims(x1,y1,x2,y2,width,height);
+            arrow.style.height=`${dims[1]}%`;
+            arrow.style.left=`${dims[2]}%`;
+            arrow.style.top=`${dims[3]}%`;
+            arrow.style.transform=`rotate(${dims[4]}rad)`;
+            var canvas=document.getElementById("canvas");
+            var context=canvas.getContext("2d");
+            context.font="2vh courier new";
+            arrow.innerHTML=`${'-'.repeat(Math.floor(dims[0]*width/100/context.measureText('-').width-1))}&gt;`;
+        }
+        function updateArrows(id){
+            Array.from(document.getElementById("cladogram").children).forEach((child)=>{var temp=getIDs(child.id);if(temp[0]==id||temp[1]==id){updateArrow(child.id);}});
+        }
+        function destroyArrow(id){
+            document.getElementById(id).remove();
+            Array.from(document.getElementById("cladogram").children).forEach((child)=>{console.log(child.id.slice(0,5));if(child.id.slice(0,5)=="arrow"&&parseInt(child.id.slice(5,child.id.indexOf('-')))>id.slice(5,child.id.indexOf('-'))){child.setAttribute("id",`arrow${parseInt(child.id.slice(5,child.id.indexOf('-')))-1}${child.id.slice(child.id.indexOf('-'))}`);}});
+            nArrows--;
+        }
+        function destroyArrows(id){
+            Array.from(document.getElementById("cladogram").children).forEach((child)=>{var temp=getIDs(child.id);if(temp[0]==id||temp[1]==id){destroyArrow(child.id);}});
+        }
+        // assembler mats
+            // root mats
+        function onRootDoubleClick(element){
+            createForm(element.innerHTML,0,0,4,6);
+        }
+        function createRoot(text,top){
+            var form=document.createElement("div");
+            form.innerHTML=text;
+            form.setAttribute("class","form");
+            form.setAttribute("ondblclick","onRootDoubleClick(this)");
+            document.getElementById("roots").appendChild(form);
+            form.style.top=(2*top+1)*3.6+"vh";
+            form.style.right="10%";
+            form.style.width="3.2vw";
+            form.style.height="3.6vh";
+        }
+        function destroyRoots(){
+             roots=document.getElementById("roots").children;
+            var len=roots.length
+            for(let i=0;i<len;i++){roots[0].remove();}
+        }
+        function findRoots(branch,shiftstyleHTML){
+            var shiftstyle=shiftstyleHTML.split(" -&gt; ");
+            var ans=[""];
+            for(var char of branch){
+                if(char==shiftstyle[1]){
+                    halfLength=ans.length;
+                    ans=[...ans,...ans];
+                    for(let i=0;i<halfLength;i++){
+                        ans[i]+=char;
+                        ans[i+halfLength]+=shiftstyle[0];
+                    }
+                }else{
+                    for(let i=0;i<ans.length;i++){
+                        ans[i]+=char;
+                    }
+                }
+            }
+            return ans;
+        } 
+            // branch mats
+        function onBranchClick(element){
+            if(element.style.backgroundColor=="rgb(68, 68, 68)"){
+                element.style.backgroundColor="#222222";
+            }else{
+                element.style.backgroundColor="#444444";
+            }
+        }
+        function resetBranch(visible){
+            var branch=document.getElementById("branch");
+            if(visible){branch.style.visibility="visible";}
+            else{branch.style.visibility="hidden";}
+            branch.style.backgroundColor="#444444";
+            branch.innerHTML="";
+        }
+        // shiftstick mats
+        var curButton=0;
+        var nForms,nButtons,nArrows;
+        function onButtonClick(element){
+            if(!inWebMode){
+                if(curButton!=0){document.getElementById("button"+curButton.toString()).style.backgroundColor="#555555";}
+                if(curButton.toString()!=element.id.slice(6)){
+                    curButton=parseInt(element.id.slice(6));
+                    element.style.backgroundColor="#333333";
+                    document.getElementById("shiftstyle").innerHTML=element.innerHTML;
+                    document.getElementById("arrow").innerHTML="-----&gt;";
+                    resetBranch(true);
+                    document.getElementById("roots").style.borderRight="2px solid #666666";
+                    destroyRoots();
+                }else{
+                    curButton=0;
+                    element.style.backgroundColor="#555555";
+                    document.getElementById("shiftstyle").innerHTML="";
+                    document.getElementById("arrow").innerHTML="";
+                    resetBranch(false);
+                    document.getElementById("roots").style.borderRight="0px";
+                    destroyRoots();
+                }
+            }
+        }
+        function createButton(id,initial,final){
+            var button=document.createElement("div");
+            button.innerHTML=initial+" -> "+final;
+            button.setAttribute("class","button");
+            button.setAttribute("onclick","onButtonClick(this)");
+            button.setAttribute("id","button"+id.toString());
+            document.getElementById("shiftstick").appendChild(button);
+        }
+        // cladogram mats
+            // form mats
+        function onFormMouseDown(element,event){
+            if(!inWebMode){
+                var x,y,newx,newy;
+                event=event||window.event;
+                event.preventDefault();
+                x=event.clientX;
+                y=event.clientY;
+                document.onmousemove=onMouseMove;
+                document.onmouseup=onMouseUp;
+                function onMouseMove(event){
+                    event=event||window.event;
+                    event.preventDefault();
+                    newx=(element.offsetLeft+event.clientX-x)/element.parentElement.offsetWidth*100;
+                    newy=(element.offsetTop+event.clientY-y)/element.parentElement.offsetHeight*100;
+                    x=event.clientX;
+                    y=event.clientY;
+                    if((0<=newx
+                        &&newx<=100-parseFloat(element.style.width)
+                        &&0<=newy
+                        &&newy<=100-parseFloat(element.style.height))
+                        ||(parseFloat(element.style.left)<0
+                        ||parseFloat(element.style.left)+parseFloat(element.style.width)>100
+                        ||parseFloat(element.style.top)<0
+                        ||parseFloat(element.style.top)+parseFloat(element.style.height)>100)){
+                            element.style.top=newy.toString()+"%";
+                            element.style.left=newx.toString()+"%";
+                            updateArrows(element.id);
+                    }
+                    else{onMouseUp();}
+                }
+                function onMouseUp(){
+                    document.onmousemove=null;
+                    document.onmouseup=null;
+                }
+            }
+        }
+        function onFormDoubleClick(element){
+            if(!inWebMode){
+                createForm( element.innerHTML,
+                            parseFloat(element.style.top)-5,
+                            parseFloat(element.style.left)-5,
+                            parseFloat(element.style.width),
+                            parseFloat(element.style.height));
+            }
+        }
+        function onFormRightClick(element,event){
+            if(!inWebMode){
+                event=event||window.event;
+                event.preventDefault();
+                destroyArrows(element.id);
+                var troubleID=parseInt(element.id.slice(4));
+                cladogram=document.getElementById("cladogram").children;
+                for(var i=0;i<cladogram.length;i++){
+                    var child=cladogram[i];
+                    if(child.id.slice(0,4)=="form"){
+                        var otherID=parseInt(child.id.slice(4));
+                        if(otherID>troubleID){
+                            child.setAttribute("id","form"+(otherID-1).toString());
+                        }
+                    }
+                }
+                nForms--;
+                element.remove();
+            }
+        }
+        function onFormClick(element){
+            if(inWebMode){
+                if(isRootForm){
+                    rootID=element.id;
+                }else{
+                    branchID=element.id;
+                }
+                function isValidArrow(rootID,branchID){
+                    var rootForm=document.getElementById(rootID).innerHTML;
+                    var branchForm=document.getElementById(branchID).innerHTML;
+                    for(var i=1;i<=nButtons;i++){
+                        var temp=findRoots(branchForm,document.getElementById(`button${i}`).innerHTML);
+                        for(var j=0;j<temp.length;j++){
+                            if(rootForm==temp[j]){return true;}
+                        }
+                    }return false;
+                }
+                isRootForm=!isRootForm;
+                if(isRootForm&&rootID!=branchID&&isValidArrow(rootID,branchID)){createArrow(`arrow${nArrows}-${rootID}-${branchID}`);}
+            }else{
+                var branch=document.getElementById("branch");
+                var go=(branch.style.backgroundColor=="rgb(34, 34, 34)");
+                if(go){
+                    destroyRoots();
+                    branch.innerHTML=element.innerHTML;
+                    onBranchClick(branch);
+                    roots=findRoots(branch.innerHTML,document.getElementById("shiftstyle").innerHTML);
+                    for(let i=0;i<roots.length;i++){
+                        createRoot(roots[i],i);
+                    }
+                }
+            }
+        }
+        function createForm(text,top,left,width,height){
+            var form=document.createElement("div");
+            form.innerHTML=text;
+            form.setAttribute("class","form");
+            form.setAttribute("id","form"+nForms.toString());
+            form.setAttribute("onmousedown","onFormMouseDown(this,event)");
+            form.setAttribute("ondblclick","onFormDoubleClick(this)");
+            form.setAttribute("oncontextmenu","onFormRightClick(this,event)");
+            form.setAttribute("onclick","onFormClick(this)");
+            document.getElementById("cladogram").appendChild(form);
+            form.style.top=top.toString()+"%";
+            form.style.left=left.toString()+"%";
+            form.style.width=width.toString()+"%";
+            form.style.height=height.toString()+"%";
+            nForms++;
+        }
+        // init
+        function init(){
+            const activeDataset = 'polynesian';
+            const datasets = {
+                abstract: {
+                    name: "Abstract",
+                    rules: {
+                        'd_to_e': { change: "d > e" },
+                        'a_to_f': { change: "a > f" },
+                        'b_to_g': { change: "b > g" },
+                        'b_to_h': { change: "b > h" },
+                        'd_to_i': { change: "d > i" },
+                        'a_to_j': { change: "a > j" }
+                    },
+                    words: [
+                        {
+                            proto_graphemes: ['a', 'b', 'c', 'd'],
+                            daughter_languages: [
+                                { word: 'abce' },
+                                { word: 'ahce' },
+                                { word: 'fbce' },
+                                { word: 'agci' },
+                                { word: 'jgcd' }
+                            ]
+                        }
+                    ]
+                },
+                polynesian: {
+                    name: "Polynesian",
+                    rules: {
+                        'k_lenition': { name: "K-Lenition", type: "phonological", change: "k > ʔ" },
+                        'l_rhotacism': { name: "L-Rhotacism", type: "phonological", change: "l > r" },
+                        'l_glottalization': { name: "L-Glottalization", type: "phonological", change: "l > ʔ" },
+                        'f_debuccalization': { name: "F-Debuccalization", type: "phonological", change: "f > h" },
+                        'f_fortition': { name: "F-Fortition", type: "phonological", change: "f > wh" },
+                        't_velarization': { name: "T-Velarization", type: "phonological", change: "t > k" }//,
+                        //'reduplication_intensifier': { name: "Reduplication (Intensifier)", type: "morphological" }
+                    },
+                    words: [
+                        { 
+                            gloss: 'black',
+                            proto_graphemes: ['k', 'e', 'l', 'e'],
+                            daughter_languages: [
+                                { name: 'hawaiian',  word: 'ʔele' },
+                                { name: 'maori',     word: 'kere' },
+                                { name: 'tongan',    word: 'kele' },
+                                { name: 'samoan',    word: 'ʔele' },
+                                { name: 'tahitian',  word: 'ʔere' },
+                                // { name: 'rapanui',   word: 'kerekere' },
+                                // { name: 'marquesan', word: 'keʔe' }
+                            ]
+                        },
+                        { 
+                            gloss: 'red',
+                            proto_graphemes: ['k', 'u', 'l', 'a'],
+                            daughter_languages: [
+                                { name: 'hawaiian',  word: 'ʔula' },
+                                { name: 'maori',     word: 'kura' },
+                                { name: 'tongan',    word: 'kula' },
+                                { name: 'samoan',    word: 'ʔula' },
+                                { name: 'tahitian',  word: 'ʔura' },
+                                // { name: 'rapanui',   word: 'kura' },
+                                // { name: 'marquesan', word: 'kuʔa' }
+                            ]
+                        },
+                        {
+                            gloss: 'house',
+                            proto_graphemes: ['f', 'a', 'l', 'e'],
+                            daughter_languages: [
+                                { name: 'hawaiian',  word: 'hale' },
+                                { name: 'maori',     word: 'whare' },
+                                { name: 'tongan',    word: 'fale' },
+                                { name: 'samoan',    word: 'fale' },
+                                { name: 'tahitian',  word: 'fare' },
+                                // { name: 'rapanui',   word: 'hare' },
+                                // { name: 'marquesan', word: 'haʔe' }
+                            ]
+                        },
+                        {
+                            gloss: 'taro',
+                            proto_graphemes: ['t', 'a', 'l', 'o'],
+                            daughter_languages: [
+                                { name: 'hawaiian',  word: 'kalo' },
+                                { name: 'maori',     word: 'taro' },
+                                { name: 'tongan',    word: 'talo' },
+                                { name: 'samoan',    word: 'talo' },
+                                { name: 'tahitian',  word: 'taro' },
+                                // { name: 'rapanui',   word: 'taro' },
+                                // { name: 'marquesan', word: 'taʔo' }
+                            ]
+                        },
+                        {
+                            gloss: 'urinate',
+                            proto_graphemes: ['m', 'i', 'm', 'i'],
+                            daughter_languages: [
+                                { name: 'hawaiian',  word: 'mimi' },
+                                { name: 'maori',     word: 'mimi' },
+                                { name: 'tongan',    word: 'mimi' },
+                                { name: 'samoan',    word: 'mimi' },
+                                { name: 'tahitian',  word: 'mimi' },
+                                // { name: 'rapanui',   word: 'mimi' },
+                                // { name: 'marquesan', word: 'mimi' }
+                            ]
+                        }
+                    ]
+                }
+            };
+
+            const puzzle = datasets[activeDataset].words[0];
+            const forms = puzzle.daughter_languages.map(lang => lang.word);
+            nForms=0;
+            forms.forEach(function(form,index,array){
+                createForm(form,60,52+8*(index-forms.length/2),4,6);
+            });
+
+            const buttons = Object.values(datasets[activeDataset].rules).map(rule=>rule.change.split(' > '));
+            nButtons=buttons.length;
+            buttons.forEach(function(button,index){
+                createButton(index+1,button[0],button[1]);
+            });
+            nArrows=0;
+
+            const protoForm = puzzle.proto_graphemes.join('');
+            document.getElementById("header").innerHTML="target: "+protoForm+document.getElementById("header").innerHTML;
+        }init();
+    </script>
+</html>
